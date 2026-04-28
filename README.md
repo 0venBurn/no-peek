@@ -15,7 +15,7 @@ Use it for LeetCode, coding interviews, math puzzles, or any problem where you w
 ## Install
 
 ```bash
-go install github.com/evanbyrne/no-peek@latest
+go install github.com/0venburn/no-peek@latest
 ```
 
 Make sure your Go bin directory is on your `PATH`:
@@ -45,7 +45,7 @@ no-peek --focus 25 --rescue 10 "Binary Search"
 ## Build from source
 
 ```bash
-git clone git@github.com:0venBurn/no-peek.git
+git clone git@github.com:0venburn/no-peek.git
 cd no-peek
 go build -o no-peek
 ./no-peek "Two Sum"
