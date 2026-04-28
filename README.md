@@ -12,27 +12,41 @@ Use it for LeetCode, coding interviews, math puzzles, or any problem where you w
 4. If you're stuck, it starts a 15 minute rescue round.
 5. After rescue time, if you're still stuck, it tells you to read the editorial.
 
+## Install
+
+```bash
+go install github.com/evanbyrne/no-peek@latest
+```
+
+Make sure your Go bin directory is on your `PATH`:
+
+```bash
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
+
 ## Run
 
 ```bash
-go run . "Two Sum"
+no-peek "Two Sum"
 ```
 
 Quick test with short timers:
 
 ```bash
-go run . --focus 1 --rescue 1 "Test Problem"
+no-peek --focus 1 --rescue 1 "Test Problem"
 ```
 
 Customize durations:
 
 ```bash
-go run . --focus 25 --rescue 10 "Binary Search"
+no-peek --focus 25 --rescue 10 "Binary Search"
 ```
 
-## Build
+## Build from source
 
 ```bash
+git clone git@github.com:0venBurn/no-peek.git
+cd no-peek
 go build -o no-peek
 ./no-peek "Two Sum"
 ```
