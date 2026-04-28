@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,29 +15,47 @@ const (
 	phaseRescue
 	phaseFinalCheckIn
 	phaseEditorial
+	phaseDeepFocusOne
+	phaseDeepShortBreak
+	phaseDeepFocusTwo
+	phaseDeepLongBreak
 )
 
 type tickMsg time.Time
 
 type model struct {
-	problem        string
-	phase          phase
-	remaining      time.Duration
-	focusDuration  time.Duration
-	rescueDuration time.Duration
-	paused         bool
-	width          int
-	height         int
+	mode               appMode
+	problem            string
+	phase              phase
+	remaining          time.Duration
+	focusDuration      time.Duration
+	rescueDuration     time.Duration
+	deepFocusDuration  time.Duration
+	shortBreakDuration time.Duration
+	longBreakDuration  time.Duration
+	paused             bool
+	width              int
+	height             int
 }
 
 func newModel(cfg config) model {
-	return model{
-		problem:        cfg.problem,
-		phase:          phaseFocus,
-		remaining:      cfg.focusDuration,
-		focusDuration:  cfg.focusDuration,
-		rescueDuration: cfg.rescueDuration,
+	m := model{
+		mode:               cfg.mode,
+		problem:            cfg.problem,
+		focusDuration:      cfg.focusDuration,
+		rescueDuration:     cfg.rescueDuration,
+		deepFocusDuration:  cfg.deepFocusDuration,
+		shortBreakDuration: cfg.shortBreakDuration,
+		longBreakDuration:  cfg.longBreakDuration,
 	}
+	if cfg.mode == modeDeep {
+		m.phase = phaseDeepFocusOne
+		m.remaining = cfg.deepFocusDuration
+	} else {
+		m.phase = phaseFocus
+		m.remaining = cfg.focusDuration
+	}
+	return m
 }
 
 func (m model) Init() tea.Cmd {
@@ -119,10 +138,24 @@ func (m model) advanceAfterTimerExpires() (tea.Model, tea.Cmd) {
 	switch m.phase {
 	case phaseFocus:
 		m.phase = phaseCheckIn
-		return m, notify("No Peek", "30 minutes are up. Are you still thinking or stuck?")
+		return m, notify("No Peek", fmt.Sprintf("%s are up. Are you still thinking or stuck?", formatDuration(m.focusDuration)))
 	case phaseRescue:
 		m.phase = phaseFinalCheckIn
-		return m, notify("No Peek", "15 minute rescue is up. Still stuck?")
+		return m, notify("No Peek", fmt.Sprintf("%s rescue is up. Still stuck?", formatDuration(m.rescueDuration)))
+	case phaseDeepFocusOne:
+		m.phase = phaseDeepShortBreak
+		m.remaining = m.shortBreakDuration
+		return m, tick()
+	case phaseDeepShortBreak:
+		m.phase = phaseDeepFocusTwo
+		m.remaining = m.deepFocusDuration
+		return m, tick()
+	case phaseDeepFocusTwo:
+		m.phase = phaseDeepLongBreak
+		m.remaining = m.longBreakDuration
+		return m, tick()
+	case phaseDeepLongBreak:
+		return m.startDeepCycle(), tick()
 	default:
 		return m, nil
 	}
@@ -135,8 +168,17 @@ func (m model) startFocusRound() model {
 	return m
 }
 
+func (m model) startDeepCycle() model {
+	m.phase = phaseDeepFocusOne
+	m.remaining = m.deepFocusDuration
+	m.paused = false
+	return m
+}
+
 func (m model) isTimerPhase() bool {
-	return m.phase == phaseFocus || m.phase == phaseRescue
+	return m.phase == phaseFocus || m.phase == phaseRescue ||
+		m.phase == phaseDeepFocusOne || m.phase == phaseDeepShortBreak ||
+		m.phase == phaseDeepFocusTwo || m.phase == phaseDeepLongBreak
 }
 
 func tick() tea.Cmd {

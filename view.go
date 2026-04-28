@@ -57,6 +57,14 @@ func (m model) content() string {
 	switch m.phase {
 	case phaseFocus:
 		b.WriteString(m.timerView("Focus round", m.focusDuration, "Stay with the problem. No hints yet."))
+	case phaseDeepFocusOne:
+		b.WriteString(m.timerView("Deep focus 1/2", m.deepFocusDuration, "No distractions."))
+	case phaseDeepShortBreak:
+		b.WriteString(m.timerView("Short break", m.shortBreakDuration, "Rest. Don't distract yourself."))
+	case phaseDeepFocusTwo:
+		b.WriteString(m.timerView("Deep focus 2/2", m.deepFocusDuration, "No distractions."))
+	case phaseDeepLongBreak:
+		b.WriteString(m.timerView("Long break", m.longBreakDuration, "Rest. Don't distract yourself."))
 	case phaseCheckIn:
 		b.WriteString(m.checkInView(
 			"Time's up.",
