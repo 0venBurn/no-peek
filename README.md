@@ -29,7 +29,7 @@ A quiet deep-work cycle:
 4. 20 minutes break — rest, but don't distract yourself.
 5. Repeat.
 
-Deep work mode does not ring notifications between phases; the TUI simply advances to the next focus or rest period.
+Deep work mode rings notifications between phases as the TUI advances to the next focus or rest period.
 
 ## Install
 
@@ -109,7 +109,7 @@ Deep work mode runs automatically through focus and break periods.
 
 ## Notifications
 
-Puzzle mode rings the terminal bell when a timer ends. It also tries a best-effort desktop notification with built-in OS commands:
+Puzzle and deep work modes ring the terminal bell when a timer ends. They also try a best-effort desktop notification with built-in OS commands:
 
 - Linux: `notify-send`
 - macOS: `osascript`

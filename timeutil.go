@@ -25,8 +25,9 @@ func progressBar(remaining, total time.Duration, width int) string {
 		filled = width
 	}
 
-	bar := strings.Repeat("━", filled) + strings.Repeat("─", width-filled)
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("86")).Render(bar)
+	filledBar := lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneMist)).Render(strings.Repeat("━", filled))
+	emptyBar := lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneBg4)).Render(strings.Repeat("─", width-filled))
+	return filledBar + emptyBar
 }
 
 func formatDuration(d time.Duration) string {

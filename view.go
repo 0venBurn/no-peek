@@ -10,28 +10,51 @@ import (
 
 const contentWidth = 58
 
-var (
-	titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212"))
-	mutedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	timeStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("86"))
-	warnStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("220"))
-	badStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("203"))
+const (
+	cuimhneBg0   = "#1A1714"
+	cuimhneBg1   = "#242019"
+	cuimhneBg2   = "#2E2921"
+	cuimhneBg3   = "#332E27"
+	cuimhneBg4   = "#3D3830"
+	cuimhneFg0   = "#F0EBE1"
+	cuimhneFg1   = "#D4CEC6"
+	cuimhneFg2   = "#9C9488"
+	cuimhneFg3   = "#6B6560"
+	cuimhneGreen = "#7FA688"
+	cuimhneSage  = "#A8B898"
+	cuimhneTerra = "#C47A5A"
+	cuimhneGold  = "#C4A882"
+	cuimhneLinen = "#B8A898"
+	cuimhneMist  = "#8FA89C"
+)
 
-	appStyle = lipgloss.NewStyle().Padding(1, 2)
+var (
+	titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGreen))
+	mutedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneFg2))
+	timeStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneMist))
+	warnStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGold))
+	badStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneTerra))
+
+	appStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(cuimhneFg0)).
+			Background(lipgloss.Color(cuimhneBg0)).
+			Padding(1, 2)
 	boxStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color(cuimhneFg0)).
+			Background(lipgloss.Color(cuimhneBg1)).
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("62")).
+			BorderForeground(lipgloss.Color(cuimhneBg3)).
 			Padding(1, 3).
 			Width(contentWidth)
 	buttonStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("230")).
-			Background(lipgloss.Color("62")).
+			Foreground(lipgloss.Color(cuimhneBg0)).
+			Background(lipgloss.Color(cuimhneGreen)).
 			Padding(0, 1)
 	dangerButtonStyle = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(lipgloss.Color("230")).
-				Background(lipgloss.Color("203")).
+				Foreground(lipgloss.Color(cuimhneBg0)).
+				Background(lipgloss.Color(cuimhneTerra)).
 				Padding(0, 1)
 )
 
@@ -98,8 +121,7 @@ func (m model) timerView(label string, total time.Duration, subtitle string) str
 	b.WriteString("\n")
 	b.WriteString(center(timeStyle.Render(formatDuration(m.remaining))))
 	b.WriteString("\n")
-	b.WriteString(center(progressBar(m.remaining, total, 36)))
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 	if m.paused {
 		b.WriteString(center(warnStyle.Render("paused")))
 		b.WriteString("\n")
