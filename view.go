@@ -8,24 +8,20 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const contentWidth = 58
-const horizontalPadding = 3
+const (
+	contentWidth      = 58
+	horizontalPadding = 3
+)
 
 const (
 	cuimhneBg0   = "#1A1714"
 	cuimhneBg1   = "#242019"
-	cuimhneBg2   = "#2E2921"
 	cuimhneBg3   = "#332E27"
-	cuimhneBg4   = "#3D3830"
 	cuimhneFg0   = "#F0EBE1"
-	cuimhneFg1   = "#D4CEC6"
 	cuimhneFg2   = "#9C9488"
-	cuimhneFg3   = "#6B6560"
 	cuimhneGreen = "#7FA688"
-	cuimhneSage  = "#A8B898"
 	cuimhneTerra = "#C47A5A"
 	cuimhneGold  = "#C4A882"
-	cuimhneLinen = "#B8A898"
 	cuimhneMist  = "#8FA89C"
 )
 

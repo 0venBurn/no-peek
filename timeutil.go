@@ -2,33 +2,8 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
-
-	"github.com/charmbracelet/lipgloss"
 )
-
-func progressBar(remaining, total time.Duration, width int) string {
-	if total <= 0 {
-		total = time.Second
-	}
-	elapsed := total - remaining
-	if elapsed < 0 {
-		elapsed = 0
-	}
-	if elapsed > total {
-		elapsed = total
-	}
-
-	filled := int(float64(elapsed) / float64(total) * float64(width))
-	if filled > width {
-		filled = width
-	}
-
-	filledBar := lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneMist)).Render(strings.Repeat("━", filled))
-	emptyBar := lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneBg4)).Render(strings.Repeat("─", width-filled))
-	return filledBar + emptyBar
-}
 
 func formatDuration(d time.Duration) string {
 	if d < 0 {
