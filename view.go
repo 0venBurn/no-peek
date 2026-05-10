@@ -9,6 +9,7 @@ import (
 )
 
 const contentWidth = 58
+const horizontalPadding = 3
 
 const (
 	cuimhneBg0   = "#1A1714"
@@ -29,22 +30,22 @@ const (
 )
 
 var (
-	titleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGreen))
-	mutedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneFg2))
-	timeStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneMist))
-	warnStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGold))
-	badStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneTerra))
+	contentLineStyle = lipgloss.NewStyle().Background(lipgloss.Color(cuimhneBg1))
+	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGreen)).Background(lipgloss.Color(cuimhneBg1))
+	mutedStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneFg2)).Background(lipgloss.Color(cuimhneBg1))
+	timeStyle        = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneMist)).Background(lipgloss.Color(cuimhneBg1))
+	warnStyle        = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGold)).Background(lipgloss.Color(cuimhneBg1))
+	badStyle         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneTerra)).Background(lipgloss.Color(cuimhneBg1))
 
 	appStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(cuimhneFg0)).
-			Background(lipgloss.Color(cuimhneBg0)).
-			Padding(1, 2)
+			Background(lipgloss.Color(cuimhneBg0))
 	boxStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(cuimhneFg0)).
 			Background(lipgloss.Color(cuimhneBg1)).
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color(cuimhneBg3)).
-			Padding(1, 3).
+			Padding(1, horizontalPadding).
 			Width(contentWidth)
 	buttonStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -61,13 +62,21 @@ var (
 func (m model) View() string {
 	box := boxStyle.Render(m.content())
 
-	if m.width > 0 {
-		box = lipgloss.PlaceHorizontal(m.width, lipgloss.Center, box)
+	if m.width <= 0 || m.height <= 0 {
+		return appStyle.Render(box)
 	}
-	if m.height > 0 {
-		box = lipgloss.PlaceVertical(m.height, lipgloss.Center, box)
-	}
-	return appStyle.Render(box)
+
+	return appStyle.
+		Width(m.width).
+		Height(m.height).
+		Render(lipgloss.Place(
+			m.width,
+			m.height,
+			lipgloss.Center,
+			lipgloss.Center,
+			box,
+			lipgloss.WithWhitespaceBackground(lipgloss.Color(cuimhneBg0)),
+		))
 }
 
 func (m model) content() string {
@@ -153,7 +162,7 @@ func editorialView() string {
 	b.WriteString(center(badStyle.Render("READ THE EDITORIAL")))
 	b.WriteString("\n\n")
 	msg := "You gave the problem a real attempt. Learn the missing idea, then try to re-solve it without looking."
-	b.WriteString(lipgloss.NewStyle().Width(contentWidth).Align(lipgloss.Center).Render(msg))
+	b.WriteString(lipgloss.NewStyle().Width(innerWidth()).Align(lipgloss.Center).Render(msg))
 	b.WriteString("\n\n")
 	b.WriteString(footer("r restart · q quit"))
 	return b.String()
@@ -174,5 +183,14 @@ func footer(text string) string {
 }
 
 func center(s string) string {
-	return lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center, s)
+	return contentLineStyle.Render(lipgloss.PlaceHorizontal(
+		innerWidth(),
+		lipgloss.Center,
+		s,
+		lipgloss.WithWhitespaceBackground(lipgloss.Color(cuimhneBg1)),
+	))
+}
+
+func innerWidth() int {
+	return contentWidth - horizontalPadding*2
 }

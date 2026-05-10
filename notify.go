@@ -2,12 +2,21 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func startNotification(name string, args ...string) {
+	cmd := exec.Command(name, args...)
+	cmd.Stdin = nil
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	_ = cmd.Start()
+}
 
 func notify(title, message string) tea.Cmd {
 	return func() tea.Msg {
@@ -20,14 +29,14 @@ func notify(title, message string) tea.Cmd {
 		switch runtime.GOOS {
 		case "linux":
 			if path, err := exec.LookPath("notify-send"); err == nil {
-				_ = exec.Command(path, title, message).Run()
+				startNotification(path, "--app-name=No Peek", "--urgency=critical", title, message)
 			}
 		case "darwin":
-			script := fmt.Sprintf(`display notification %q with title %q`, message, title)
-			_ = exec.Command("osascript", "-e", script).Run()
+			script := fmt.Sprintf(`display notification %q with title %q sound name "Glass"`, message, title)
+			startNotification("osascript", "-e", script)
 		case "windows":
 			ps := fmt.Sprintf(`[console]::beep(); Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show(%q, %q) | Out-Null`, message, title)
-			_ = exec.Command("powershell", "-NoProfile", "-Command", ps).Run()
+			startNotification("powershell", "-NoProfile", "-Command", ps)
 		}
 		return nil
 	}
