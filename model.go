@@ -33,6 +33,7 @@ type model struct {
 	deepFocusDuration  time.Duration
 	shortBreakDuration time.Duration
 	longBreakDuration  time.Duration
+	noBreaks           bool
 	paused             bool
 	width              int
 	height             int
@@ -47,6 +48,7 @@ func newModel(cfg config) model {
 		deepFocusDuration:  cfg.deepFocusDuration,
 		shortBreakDuration: cfg.shortBreakDuration,
 		longBreakDuration:  cfg.longBreakDuration,
+		noBreaks:           cfg.noBreaks,
 	}
 	if cfg.mode == modeDeep {
 		m.phase = phaseDeepFocusOne
@@ -143,6 +145,10 @@ func (m model) advanceAfterTimerExpires() (tea.Model, tea.Cmd) {
 		m.phase = phaseFinalCheckIn
 		return m, notify("No Peek", fmt.Sprintf("%s rescue is up. Still stuck?", formatDuration(m.rescueDuration)))
 	case phaseDeepFocusOne:
+		if m.noBreaks {
+			m = m.startDeepCycle()
+			return m, tea.Batch(tick(), notify("No Peek", fmt.Sprintf("%s focus block complete. Starting a new %s focus block.", formatDuration(m.deepFocusDuration), formatDuration(m.deepFocusDuration))))
+		}
 		m.phase = phaseDeepShortBreak
 		m.remaining = m.shortBreakDuration
 		return m, tea.Batch(tick(), notify("No Peek", fmt.Sprintf("%s focus block complete. Time for a %s short break.", formatDuration(m.deepFocusDuration), formatDuration(m.shortBreakDuration))))
@@ -151,6 +157,10 @@ func (m model) advanceAfterTimerExpires() (tea.Model, tea.Cmd) {
 		m.remaining = m.deepFocusDuration
 		return m, tea.Batch(tick(), notify("No Peek", fmt.Sprintf("%s short break complete. Time for another %s focus block.", formatDuration(m.shortBreakDuration), formatDuration(m.deepFocusDuration))))
 	case phaseDeepFocusTwo:
+		if m.noBreaks {
+			m = m.startDeepCycle()
+			return m, tea.Batch(tick(), notify("No Peek", fmt.Sprintf("%s focus block complete. Starting a new %s focus block.", formatDuration(m.deepFocusDuration), formatDuration(m.deepFocusDuration))))
+		}
 		m.phase = phaseDeepLongBreak
 		m.remaining = m.longBreakDuration
 		return m, tea.Batch(tick(), notify("No Peek", fmt.Sprintf("%s focus block complete. Time for a %s long break.", formatDuration(m.deepFocusDuration), formatDuration(m.longBreakDuration))))

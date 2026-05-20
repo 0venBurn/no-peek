@@ -33,6 +33,7 @@ type config struct {
 	deepFocusDuration  time.Duration
 	shortBreakDuration time.Duration
 	longBreakDuration  time.Duration
+	noBreaks           bool
 }
 
 func parseConfig() config {
@@ -42,6 +43,7 @@ func parseConfig() config {
 	deepFocusMinutes := flag.Int("deep-focus", 45, "deep work focus length in minutes")
 	shortBreakMinutes := flag.Int("short-break", 5, "deep work short break length in minutes")
 	longBreakMinutes := flag.Int("long-break", 20, "deep work long break length in minutes")
+	noBreaks := flag.Bool("no-breaks", false, "deep work mode: continuous focus without breaks")
 	flag.Parse()
 
 	mode := appMode(strings.ToLower(strings.TrimSpace(*modeValue)))
@@ -72,6 +74,7 @@ func parseConfig() config {
 		deepFocusDuration:  time.Duration(*deepFocusMinutes) * time.Minute,
 		shortBreakDuration: time.Duration(*shortBreakMinutes) * time.Minute,
 		longBreakDuration:  time.Duration(*longBreakMinutes) * time.Minute,
+		noBreaks:           *noBreaks,
 	}
 }
 

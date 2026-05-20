@@ -59,6 +59,12 @@ Run deep work mode:
 no-peek --mode deep "Write design doc"
 ```
 
+Run deep work mode without breaks (continuous focus):
+
+```bash
+no-peek --mode deep --no-breaks "Write design doc"
+```
+
 Quick puzzle test with short timers:
 
 ```bash
@@ -81,6 +87,12 @@ Customize deep work durations:
 
 ```bash
 no-peek --mode deep --deep-focus 45 --short-break 5 --long-break 20 "Write design doc"
+```
+
+Single 60-minute deep work session without breaks:
+
+```bash
+no-peek --mode deep --no-breaks --deep-focus 60 "Deep work"
 ```
 
 ## Build from source
