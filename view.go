@@ -48,6 +48,11 @@ var (
 			Foreground(lipgloss.Color(cuimhneBg0)).
 			Background(lipgloss.Color(cuimhneGreen)).
 			Padding(0, 1)
+	selectedLineStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color(cuimhneBg0)).
+				Background(lipgloss.Color(cuimhneGold)).
+				Padding(0, 1)
 	dangerButtonStyle = lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color(cuimhneBg0)).
@@ -76,6 +81,10 @@ func (m model) View() string {
 }
 
 func (m model) content() string {
+	if m.screen == screenMenu {
+		return m.menuView()
+	}
+
 	var b strings.Builder
 	b.WriteString(center(titleStyle.Render("NO PEEK")))
 	b.WriteString("\n")
@@ -86,7 +95,11 @@ func (m model) content() string {
 	case phaseFocus:
 		b.WriteString(m.timerView("Focus round", m.focusDuration, "Stay with the problem. No hints yet."))
 	case phaseDeepFocusOne:
-		b.WriteString(m.timerView("Deep focus 1/2", m.deepFocusDuration, "No distractions."))
+		label := "Deep focus 1/2"
+		if m.noBreaks {
+			label = "Deep focus"
+		}
+		b.WriteString(m.timerView(label, m.deepFocusDuration, "No distractions."))
 	case phaseDeepShortBreak:
 		b.WriteString(m.timerView("Short break", m.shortBreakDuration, "Rest. Don't distract yourself."))
 	case phaseDeepFocusTwo:
@@ -120,6 +133,70 @@ func (m model) content() string {
 	return b.String()
 }
 
+func (m model) menuView() string {
+	var b strings.Builder
+	b.WriteString(center(titleStyle.Render("NO PEEK")))
+	b.WriteString("\n")
+	b.WriteString(center(mutedStyle.Render("launch menu")))
+	b.WriteString("\n\n")
+	b.WriteString(m.menuRow("mode", "Mode", string(m.mode)))
+	b.WriteString("\n")
+	b.WriteString(m.menuRow("session", "Session", m.problem))
+	b.WriteString("\n\n")
+	if m.mode == modePuzzle {
+		b.WriteString(m.menuRow("focus", "Focus", m.menuDurationValue("focus", m.focusDuration)))
+		b.WriteString("\n")
+		b.WriteString(m.menuRow("rescue", "Rescue", m.menuDurationValue("rescue", m.rescueDuration)))
+	} else {
+		b.WriteString(m.menuRow("deepFocus", "Focus", m.menuDurationValue("deepFocus", m.deepFocusDuration)))
+		b.WriteString("\n")
+		b.WriteString(m.menuRow("shortBreak", "Short break", m.menuDurationValue("shortBreak", m.shortBreakDuration)))
+		b.WriteString("\n")
+		b.WriteString(m.menuRow("longBreak", "Long break", m.menuDurationValue("longBreak", m.longBreakDuration)))
+		b.WriteString("\n")
+		breaks := "on"
+		if m.noBreaks {
+			breaks = "off"
+		}
+		b.WriteString(m.menuRow("breaks", "Breaks", breaks))
+		b.WriteString("\n")
+		b.WriteString(m.menuRow("cycles", "Cycles", fmt.Sprintf("%d", m.deepCycles)))
+	}
+	b.WriteString("\n\n")
+	if m.menuEditingField == "" {
+		b.WriteString(footer("j/k select · enter edit · s start · q quit"))
+	} else if m.isMinuteField(m.menuEditingField) {
+		b.WriteString(footer("type minutes, e.g. 25 · enter save · esc cancel"))
+	} else {
+		b.WriteString(footer("type value or h/l toggle · enter done · esc cancel"))
+	}
+	return b.String()
+}
+
+func (m model) menuDurationValue(field string, d time.Duration) string {
+	if m.menuEditingField == field {
+		if m.menuInput == "" {
+			return ""
+		}
+		return m.menuInput + " min"
+	}
+	return fmt.Sprintf("%d min", int(d/time.Minute))
+}
+
+func (m model) menuRow(field, label, value string) string {
+	prefix := "  "
+	if m.selectedMenuField() == field {
+		prefix = "> "
+	}
+	line := fmt.Sprintf("%s%-12s %s", prefix, label+":", value)
+	if m.menuEditingField == field {
+		line = selectedLineStyle.Width(innerWidth()).Render(line)
+	} else {
+		line = contentLineStyle.Width(innerWidth()).Render(line)
+	}
+	return center(line)
+}
+
 func (m model) timerView(label string, total time.Duration, subtitle string) string {
 	var b strings.Builder
 	b.WriteString(center(mutedStyle.Render(label)))
@@ -135,7 +212,7 @@ func (m model) timerView(label string, total time.Duration, subtitle string) str
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
-	b.WriteString(footer("p/space pause · q quit"))
+	b.WriteString(footer("p/space pause · q menu"))
 	return b.String()
 }
 
@@ -149,7 +226,7 @@ func (m model) checkInView(title, prompt, continueLabel, continueHint, stuckLabe
 	b.WriteString("\n")
 	b.WriteString(choiceDanger("s", stuckLabel, stuckHint))
 	b.WriteString("\n\n")
-	b.WriteString(footer("q quit"))
+	b.WriteString(footer("q menu"))
 	return b.String()
 }
 
@@ -160,7 +237,7 @@ func editorialView() string {
 	msg := "You gave the problem a real attempt. Learn the missing idea, then try to re-solve it without looking."
 	b.WriteString(lipgloss.NewStyle().Width(innerWidth()).Align(lipgloss.Center).Render(msg))
 	b.WriteString("\n\n")
-	b.WriteString(footer("r restart · q quit"))
+	b.WriteString(footer("enter menu · r restart · q menu"))
 	return b.String()
 }
 

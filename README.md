@@ -5,7 +5,7 @@ A simple Bubble Tea TUI with two focused tools:
 - **Puzzle mode**: for LeetCode, coding interviews, math puzzles, or any problem where you want a structured attempt before reading the editorial.
 - **Deep work mode**: for sustained work sessions with deliberate focus blocks and quiet breaks.
 
-You must choose a tool with `--mode puzzle` or `--mode deep`.
+Run `no-peek` to open the launch UI, configure your session, then start. CLI flags still work as launch-menu defaults.
 
 ## Tools / Modes
 
@@ -45,9 +45,13 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 
 ## Run
 
-`--mode` is required.
+Open the launch UI:
 
-Run puzzle mode:
+```bash
+no-peek
+```
+
+Start with puzzle defaults:
 
 ```bash
 no-peek --mode puzzle "Two Sum"
@@ -109,7 +113,8 @@ go build -o no-peek
 Common controls:
 
 - `p` or `space` pause/resume timer
-- `q` quit
+- `q` return to the launch menu during a session
+- `ctrl+c` quit
 
 Puzzle mode controls:
 
@@ -117,7 +122,18 @@ Puzzle mode controls:
 - `s` stuck
 - `r` restart from editorial screen
 
-Deep work mode runs automatically through focus and break periods.
+Deep work mode runs automatically through focus and break periods, then returns to the launch menu after the configured cycle count.
+
+Launch menu controls:
+
+- `j` / `k` move between settings
+- `enter` selects a setting for editing; `enter` again finishes editing
+- while editing, `h` / `l` change the selected setting
+- while editing session, type/backspace to change the name
+- while editing durations, type whole minutes directly
+- while editing mode/breaks, `space` toggles
+- `s` starts from the menu
+- `q` quits
 
 ## Notifications
 

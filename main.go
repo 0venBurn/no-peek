@@ -34,23 +34,23 @@ type config struct {
 	shortBreakDuration time.Duration
 	longBreakDuration  time.Duration
 	noBreaks           bool
+	deepCycles         int
 }
 
 func parseConfig() config {
-	modeValue := flag.String("mode", "", "required mode to run: puzzle or deep")
+	modeValue := flag.String("mode", "", "initial mode: puzzle or deep")
 	focusMinutes := flag.Int("focus", 30, "puzzle focus round length in minutes")
 	rescueMinutes := flag.Int("rescue", 15, "puzzle stuck/rescue round length in minutes")
 	deepFocusMinutes := flag.Int("deep-focus", 45, "deep work focus length in minutes")
 	shortBreakMinutes := flag.Int("short-break", 5, "deep work short break length in minutes")
 	longBreakMinutes := flag.Int("long-break", 20, "deep work long break length in minutes")
 	noBreaks := flag.Bool("no-breaks", false, "deep work mode: continuous focus without breaks")
+	deepCycles := flag.Int("cycles", 1, "deep work cycles before returning to menu")
 	flag.Parse()
 
 	mode := appMode(strings.ToLower(strings.TrimSpace(*modeValue)))
 	if mode == "" {
-		fmt.Fprintln(os.Stderr, "missing required --mode flag: use --mode puzzle or --mode deep")
-		flag.Usage()
-		os.Exit(2)
+		mode = modePuzzle
 	}
 	if mode != modePuzzle && mode != modeDeep {
 		fmt.Fprintf(os.Stderr, "unknown mode %q: use --mode puzzle or --mode deep\n", *modeValue)
@@ -75,10 +75,11 @@ func parseConfig() config {
 		shortBreakDuration: time.Duration(*shortBreakMinutes) * time.Minute,
 		longBreakDuration:  time.Duration(*longBreakMinutes) * time.Minute,
 		noBreaks:           *noBreaks,
+		deepCycles:         max(1, *deepCycles),
 	}
 }
 
 func run(cfg config) error {
-	_, err := tea.NewProgram(newModel(cfg), tea.WithAltScreen()).Run()
+	_, err := tea.NewProgram(newAppModel(cfg), tea.WithAltScreen()).Run()
 	return err
 }
