@@ -18,65 +18,36 @@ func main() {
 	}
 }
 
-type appMode string
-
-const (
-	modePuzzle appMode = "puzzle"
-	modeDeep   appMode = "deep"
-)
-
-type config struct {
-	mode               appMode
-	problem            string
-	focusDuration      time.Duration
-	rescueDuration     time.Duration
-	deepFocusDuration  time.Duration
-	shortBreakDuration time.Duration
-	longBreakDuration  time.Duration
-	noBreaks           bool
-	deepCycles         int
-}
-
 func parseConfig() config {
+	defaults := defaultConfig()
 	modeValue := flag.String("mode", "", "initial mode: puzzle or deep")
-	focusMinutes := flag.Int("focus", 30, "puzzle focus round length in minutes")
-	rescueMinutes := flag.Int("rescue", 15, "puzzle stuck/rescue round length in minutes")
-	deepFocusMinutes := flag.Int("deep-focus", 45, "deep work focus length in minutes")
-	shortBreakMinutes := flag.Int("short-break", 5, "deep work short break length in minutes")
-	longBreakMinutes := flag.Int("long-break", 20, "deep work long break length in minutes")
-	noBreaks := flag.Bool("no-breaks", false, "deep work mode: continuous focus without breaks")
-	deepCycles := flag.Int("cycles", 1, "deep work cycles before returning to menu")
+	focusMinutes := flag.Int("focus", wholeMinutes(defaults.focusDuration), "puzzle focus round length in minutes")
+	rescueMinutes := flag.Int("rescue", wholeMinutes(defaults.rescueDuration), "puzzle stuck/rescue round length in minutes")
+	deepFocusMinutes := flag.Int("deep-focus", wholeMinutes(defaults.deepFocusDuration), "deep work focus length in minutes")
+	shortBreakMinutes := flag.Int("short-break", wholeMinutes(defaults.shortBreakDuration), "deep work short break length in minutes")
+	longBreakMinutes := flag.Int("long-break", wholeMinutes(defaults.longBreakDuration), "deep work long break length in minutes")
+	noBreaks := flag.Bool("no-breaks", defaults.noBreaks, "deep work mode: continuous focus without breaks")
+	deepCycles := flag.Int("cycles", defaults.deepCycles, "deep work cycles before returning to menu")
 	flag.Parse()
 
 	mode := appMode(strings.ToLower(strings.TrimSpace(*modeValue)))
-	if mode == "" {
-		mode = modePuzzle
-	}
-	if mode != modePuzzle && mode != modeDeep {
+	if mode != "" && !validMode(mode) {
 		fmt.Fprintf(os.Stderr, "unknown mode %q: use --mode puzzle or --mode deep\n", *modeValue)
 		flag.Usage()
 		os.Exit(2)
 	}
 
-	problem := strings.TrimSpace(strings.Join(flag.Args(), " "))
-	if problem == "" {
-		problem = "Untitled problem"
-		if mode == modeDeep {
-			problem = "Deep work"
-		}
-	}
-
-	return config{
-		mode:               mode,
-		problem:            problem,
-		focusDuration:      time.Duration(*focusMinutes) * time.Minute,
-		rescueDuration:     time.Duration(*rescueMinutes) * time.Minute,
-		deepFocusDuration:  time.Duration(*deepFocusMinutes) * time.Minute,
-		shortBreakDuration: time.Duration(*shortBreakMinutes) * time.Minute,
-		longBreakDuration:  time.Duration(*longBreakMinutes) * time.Minute,
-		noBreaks:           *noBreaks,
-		deepCycles:         max(1, *deepCycles),
-	}
+	return newConfig(
+		mode,
+		strings.TrimSpace(strings.Join(flag.Args(), " ")),
+		time.Duration(*focusMinutes)*time.Minute,
+		time.Duration(*rescueMinutes)*time.Minute,
+		time.Duration(*deepFocusMinutes)*time.Minute,
+		time.Duration(*shortBreakMinutes)*time.Minute,
+		time.Duration(*longBreakMinutes)*time.Minute,
+		*noBreaks,
+		*deepCycles,
+	)
 }
 
 func run(cfg config) error {

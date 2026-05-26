@@ -18,6 +18,23 @@ func startNotification(name string, args ...string) {
 	_ = cmd.Start()
 }
 
+type notificationIntent struct {
+	enabled bool
+	title   string
+	message string
+}
+
+func notifyIntent(title, message string) notificationIntent {
+	return notificationIntent{enabled: true, title: title, message: message}
+}
+
+func (n notificationIntent) cmd() tea.Cmd {
+	if !n.enabled {
+		return nil
+	}
+	return notify(n.title, n.message)
+}
+
 func notify(title, message string) tea.Cmd {
 	return func() tea.Msg {
 		// Always ring the terminal bell. This is dependency-free and works anywhere
