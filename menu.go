@@ -70,9 +70,10 @@ func (m menuState) handleKey(msg tea.KeyMsg) menuKeyOutcome {
 			m.adjustSelected(-1)
 		}
 	case "h":
-		if field.kind == menuFieldText {
+		switch field.kind {
+		case menuFieldText:
 			m.appendProblemInput("h")
-		} else if field.kind == menuFieldMode || field.kind == menuFieldToggle || field.kind == menuFieldNumber {
+		case menuFieldMode, menuFieldToggle, menuFieldNumber:
 			m.adjustSelected(-1)
 		}
 	case "right":
@@ -80,9 +81,10 @@ func (m menuState) handleKey(msg tea.KeyMsg) menuKeyOutcome {
 			m.adjustSelected(1)
 		}
 	case "l":
-		if field.kind == menuFieldText {
+		switch field.kind {
+		case menuFieldText:
 			m.appendProblemInput("l")
-		} else if field.kind == menuFieldMode || field.kind == menuFieldToggle || field.kind == menuFieldNumber {
+		case menuFieldMode, menuFieldToggle, menuFieldNumber:
 			m.adjustSelected(1)
 		}
 	case " ":

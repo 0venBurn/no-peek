@@ -30,8 +30,6 @@ Examples:
 - Destructive op warning (temporary clarity mode):
   - "**Warning:** This will permanently delete all rows in `users` and cannot be undone. Confirm backup first."
 
-## Docs
+## Project
 
-Read docs when they help current intent. Small/local work needs nearby files only. Broader/riskier work needs relevant docs and specs.
-
-hello
+Small Go project for tracking time in a Tui
