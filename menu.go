@@ -48,8 +48,7 @@ func (m menuState) handleKey(msg tea.KeyMsg) menuKeyOutcome {
 		case "s":
 			return menuKeyOutcome{menu: m, start: true}
 		case "enter":
-			m.editingField = m.selectedField().id
-			m.input = ""
+			m.startEditingSelected()
 		case "up", "k", "shift+tab":
 			m.moveCursor(-1)
 		case "down", "j", "tab":
@@ -66,12 +65,24 @@ func (m menuState) handleKey(msg tea.KeyMsg) menuKeyOutcome {
 		m.commitEdit()
 	case "esc":
 		m.stopEditing()
-	case "left", "h":
+	case "left":
 		if field.kind == menuFieldMode || field.kind == menuFieldToggle || field.kind == menuFieldNumber {
 			m.adjustSelected(-1)
 		}
-	case "right", "l":
+	case "h":
+		if field.kind == menuFieldText {
+			m.appendProblemInput("h")
+		} else if field.kind == menuFieldMode || field.kind == menuFieldToggle || field.kind == menuFieldNumber {
+			m.adjustSelected(-1)
+		}
+	case "right":
 		if field.kind == menuFieldMode || field.kind == menuFieldToggle || field.kind == menuFieldNumber {
+			m.adjustSelected(1)
+		}
+	case "l":
+		if field.kind == menuFieldText {
+			m.appendProblemInput("l")
+		} else if field.kind == menuFieldMode || field.kind == menuFieldToggle || field.kind == menuFieldNumber {
 			m.adjustSelected(1)
 		}
 	case " ":
@@ -81,7 +92,7 @@ func (m menuState) handleKey(msg tea.KeyMsg) menuKeyOutcome {
 		case menuFieldToggle:
 			m.toggleBreaks()
 		case menuFieldText:
-			m.cfg.problem += " "
+			m.appendProblemInput(" ")
 		}
 	case "backspace":
 		if field.kind == menuFieldText && len(m.cfg.problem) > 0 {
@@ -92,7 +103,7 @@ func (m menuState) handleKey(msg tea.KeyMsg) menuKeyOutcome {
 	default:
 		s := msg.String()
 		if field.kind == menuFieldText && isPrintableRune(s) {
-			m.cfg.problem += s
+			m.appendProblemInput(s)
 		} else if field.kind == menuFieldMinutes && isDigitRune(s) && len(m.input) < 3 {
 			m.input += s
 		} else if field.kind == menuFieldNumber && isDigitRune(s) && len(m.input) < 2 {
@@ -132,7 +143,7 @@ func (m menuState) footerText() string {
 }
 
 func (m menuState) fields() []menuFieldDef {
-	return menuFieldsFor(m.cfg.mode)
+	return menuFieldsFor(m.cfg)
 }
 
 func (m menuState) selectedField() menuFieldDef {
@@ -163,6 +174,15 @@ func (m *menuState) moveCursor(delta int) {
 	fields := m.fields()
 	m.cursor = (m.cursor + delta + len(fields)) % len(fields)
 	m.stopEditing()
+}
+
+func (m *menuState) startEditingSelected() {
+	field := m.selectedField()
+	m.editingField = field.id
+	m.input = ""
+	if field.kind == menuFieldText && m.cfg.problem == defaultProblem(m.cfg.mode) {
+		m.cfg.problem = ""
+	}
 }
 
 func (m *menuState) commitEdit() {
@@ -212,6 +232,27 @@ func (m *menuState) toggleMode() {
 
 func (m *menuState) toggleBreaks() {
 	m.cfg.noBreaks = !m.cfg.noBreaks
+	m.moveCursorToField(fieldBreaks)
+}
+
+func (m *menuState) moveCursorToField(id menuFieldID) {
+	for i, field := range m.fields() {
+		if field.id == id {
+			m.cursor = i
+			return
+		}
+	}
+	if m.cursor >= len(m.fields()) {
+		m.cursor = len(m.fields()) - 1
+	}
+}
+
+func (m *menuState) appendProblemInput(s string) {
+	if m.input == "" && m.cfg.problem == defaultProblem(m.cfg.mode) {
+		m.cfg.problem = ""
+	}
+	m.cfg.problem += s
+	m.input = "typed"
 }
 
 func (m menuState) minuteField(id menuFieldID) int {

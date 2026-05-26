@@ -68,6 +68,18 @@ var deepModeDefinition = modeDefinition{
 	},
 }
 
+var deepNoBreakModeDefinition = modeDefinition{
+	mode:           modeDeep,
+	defaultProblem: "Deep work",
+	menuFields: []menuFieldDef{
+		{id: fieldMode, label: "Mode", kind: menuFieldMode},
+		{id: fieldSession, label: "Session", kind: menuFieldText},
+		{id: fieldDeepFocus, label: "Focus", kind: menuFieldMinutes},
+		{id: fieldBreaks, label: "Breaks", kind: menuFieldToggle},
+		{id: fieldCycles, label: "Cycles", kind: menuFieldNumber},
+	},
+}
+
 func modeDef(mode appMode) modeDefinition {
 	if mode == modeDeep {
 		return deepModeDefinition
@@ -79,8 +91,11 @@ func validMode(mode appMode) bool {
 	return mode == modePuzzle || mode == modeDeep
 }
 
-func menuFieldsFor(mode appMode) []menuFieldDef {
-	return modeDef(mode).menuFields
+func menuFieldsFor(cfg config) []menuFieldDef {
+	if cfg.mode == modeDeep && cfg.noBreaks {
+		return deepNoBreakModeDefinition.menuFields
+	}
+	return modeDef(cfg.mode).menuFields
 }
 
 func defaultProblem(mode appMode) string {
