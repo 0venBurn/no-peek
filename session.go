@@ -78,6 +78,7 @@ type timerRender struct {
 	remaining time.Duration
 	paused    bool
 	subtitle  string
+	canSolve  bool
 }
 
 type checkInRender struct {
@@ -222,6 +223,7 @@ func (s sessionState) timerRender() (timerRender, bool) {
 		remaining: s.remaining,
 		paused:    s.paused,
 		subtitle:  def.subtitle,
+		canSolve:  s.mode == modePuzzle,
 	}, true
 }
 
@@ -259,6 +261,17 @@ func (s sessionState) restartFromEditorial() sessionTransition {
 		return s.noop()
 	}
 	return sessionTransition{session: s.startFocusRound(), nextTick: true}
+}
+
+func (s sessionState) solved() sessionTransition {
+	if s.mode != modePuzzle || !s.isTimerPhase() {
+		return s.noop()
+	}
+	return sessionTransition{
+		session:      s,
+		finished:     true,
+		notification: notifyIntent("No Peek", "Congrats! Puzzle solved."),
+	}
 }
 
 func (s sessionState) stuck() sessionTransition {
@@ -324,7 +337,11 @@ func (s sessionState) advanceAfterTimerExpires() sessionTransition {
 	case phaseDeepLongBreak:
 		s.completedCycles++
 		if s.completedCycles >= s.deepCycles {
-			return sessionTransition{session: s, finished: true}
+			return sessionTransition{
+				session:      s,
+				finished:     true,
+				notification: notifyIntent("No Peek", fmt.Sprintf("%s long break complete. Deep work complete.", formatDuration(s.longBreakDuration))),
+			}
 		}
 		s = s.startDeepCycle()
 		return sessionTransition{
@@ -341,7 +358,11 @@ func (s sessionState) finishDeepFocusBlock() sessionTransition {
 	if s.noBreaks {
 		s.completedCycles++
 		if s.completedCycles >= s.deepCycles {
-			return sessionTransition{session: s, finished: true}
+			return sessionTransition{
+				session:      s,
+				finished:     true,
+				notification: notifyIntent("No Peek", fmt.Sprintf("%s focus block complete. Deep work complete.", formatDuration(s.deepFocusDuration))),
+			}
 		}
 		s = s.startDeepCycle()
 		return sessionTransition{

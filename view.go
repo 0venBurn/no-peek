@@ -154,6 +154,11 @@ func timerView(timer timerRender) string {
 		b.WriteString(center(mutedStyle.Render(timer.subtitle)))
 		b.WriteString("\n")
 	}
+	if timer.canSolve {
+		b.WriteString("\n")
+		b.WriteString(choice("c", "solved", "congrats → menu"))
+		b.WriteString("\n")
+	}
 	b.WriteString("\n")
 	b.WriteString(footer("p/space pause · q menu"))
 	return b.String()

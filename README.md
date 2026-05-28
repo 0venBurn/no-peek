@@ -29,7 +29,7 @@ A quiet deep-work cycle:
 4. 20 minutes break — rest, but don't distract yourself.
 5. Repeat.
 
-Deep work mode rings notifications between phases as the TUI advances to the next focus or rest period.
+Deep work mode rings notifications when each focus or break block ends, including the final block before returning to the launch menu.
 
 ## Install
 
@@ -118,6 +118,7 @@ Common controls:
 
 Puzzle mode controls:
 
+- `c` solved / congrats, return to menu
 - `t` still thinking / new ideas
 - `s` stuck
 - `r` restart from editorial screen

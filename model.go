@@ -100,6 +100,8 @@ func (m model) handleSessionKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.applySessionTransition(m.session.continueThinking())
 	case "s":
 		return m.applySessionTransition(m.session.stuck())
+	case "c":
+		return m.applySessionTransition(m.session.solved())
 	case "r":
 		return m.applySessionTransition(m.session.restartFromEditorial())
 	case "enter":
@@ -112,9 +114,6 @@ func (m model) handleSessionKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m model) applySessionTransition(transition sessionTransition) (tea.Model, tea.Cmd) {
 	m.session = transition.session
-	if transition.finished {
-		return m.returnToMenu()
-	}
 
 	var cmds []tea.Cmd
 	if transition.nextTick {
@@ -122,6 +121,11 @@ func (m model) applySessionTransition(transition sessionTransition) (tea.Model, 
 	}
 	if transition.notification.enabled {
 		cmds = append(cmds, transition.notification.cmd())
+	}
+	if transition.finished {
+		next, cmd := m.returnToMenu()
+		cmds = append(cmds, cmd)
+		return next, tea.Batch(cmds...)
 	}
 	return m, tea.Batch(cmds...)
 }
