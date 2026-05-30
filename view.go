@@ -25,12 +25,11 @@ const (
 )
 
 var (
-	contentLineStyle = lipgloss.NewStyle().Background(lipgloss.Color(cuimhneBg1))
+	contentLineStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneFg0)).Background(lipgloss.Color(cuimhneBg1))
 	titleStyle       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGreen)).Background(lipgloss.Color(cuimhneBg1))
 	mutedStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(cuimhneFg2)).Background(lipgloss.Color(cuimhneBg1))
 	timeStyle        = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneMist)).Background(lipgloss.Color(cuimhneBg1))
 	warnStyle        = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneGold)).Background(lipgloss.Color(cuimhneBg1))
-	badStyle         = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(cuimhneTerra)).Background(lipgloss.Color(cuimhneBg1))
 
 	appStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(cuimhneFg0)).
@@ -42,20 +41,10 @@ var (
 			BorderForeground(lipgloss.Color(cuimhneBg3)).
 			Padding(1, horizontalPadding).
 			Width(contentWidth)
-	buttonStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color(cuimhneBg0)).
-			Background(lipgloss.Color(cuimhneGreen)).
-			Padding(0, 1)
 	selectedLineStyle = lipgloss.NewStyle().
 				Bold(true).
 				Foreground(lipgloss.Color(cuimhneBg0)).
 				Background(lipgloss.Color(cuimhneGold)).
-				Padding(0, 1)
-	dangerButtonStyle = lipgloss.NewStyle().
-				Bold(true).
-				Foreground(lipgloss.Color(cuimhneBg0)).
-				Background(lipgloss.Color(cuimhneTerra)).
 				Padding(0, 1)
 )
 
@@ -156,23 +145,23 @@ func timerView(timer timerRender) string {
 	}
 	if timer.canSolve {
 		b.WriteString("\n")
-		b.WriteString(choice("c", "solved", "congrats → menu"))
+		b.WriteString(footer("c solved · p/space pause · q menu"))
+	} else {
 		b.WriteString("\n")
+		b.WriteString(footer("p/space pause · q menu"))
 	}
-	b.WriteString("\n")
-	b.WriteString(footer("p/space pause · q menu"))
 	return b.String()
 }
 
 func checkInView(checkIn checkInRender) string {
 	var b strings.Builder
-	b.WriteString(center(warnStyle.Render(checkIn.title)))
+	b.WriteString(center(titleStyle.Render(checkIn.title)))
 	b.WriteString("\n\n")
-	b.WriteString(center(checkIn.prompt))
+	b.WriteString(center(mutedStyle.Render(checkIn.prompt)))
 	b.WriteString("\n\n")
 	b.WriteString(choice("t", checkIn.continueLabel, checkIn.continueHint))
 	b.WriteString("\n")
-	b.WriteString(choiceDanger("s", checkIn.stuckLabel, checkIn.stuckHint))
+	b.WriteString(choice("s", checkIn.stuckLabel, checkIn.stuckHint))
 	b.WriteString("\n\n")
 	b.WriteString(footer("q menu"))
 	return b.String()
@@ -180,22 +169,17 @@ func checkInView(checkIn checkInRender) string {
 
 func editorialView(editorial editorialRender) string {
 	var b strings.Builder
-	b.WriteString(center(badStyle.Render(editorial.title)))
+	b.WriteString(center(titleStyle.Render(editorial.title)))
 	b.WriteString("\n\n")
-	b.WriteString(lipgloss.NewStyle().Width(innerWidth()).Align(lipgloss.Center).Render(editorial.message))
+	b.WriteString(contentLineStyle.Width(innerWidth()).Align(lipgloss.Center).Render(editorial.message))
 	b.WriteString("\n\n")
 	b.WriteString(footer("enter menu · r restart · q menu"))
 	return b.String()
 }
 
 func choice(key, label, hint string) string {
-	line := fmt.Sprintf("%s  %-16s %s", buttonStyle.Render(key), label, mutedStyle.Render(hint))
-	return center(line)
-}
-
-func choiceDanger(key, label, hint string) string {
-	line := fmt.Sprintf("%s  %-16s %s", dangerButtonStyle.Render(key), label, mutedStyle.Render(hint))
-	return center(line)
+	line := fmt.Sprintf("%s   %-16s %s", key, label, hint)
+	return center(mutedStyle.Render(line))
 }
 
 func footer(text string) string {

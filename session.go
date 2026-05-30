@@ -20,19 +20,11 @@ const (
 )
 
 type sessionState struct {
-	mode               appMode
-	problem            string
-	phase              phase
-	remaining          time.Duration
-	focusDuration      time.Duration
-	rescueDuration     time.Duration
-	deepFocusDuration  time.Duration
-	shortBreakDuration time.Duration
-	longBreakDuration  time.Duration
-	noBreaks           bool
-	deepCycles         int
-	completedCycles    int
-	paused             bool
+	cfg             config
+	phase           phase
+	remaining       time.Duration
+	completedCycles int
+	paused          bool
 }
 
 type sessionTransition struct {
@@ -99,37 +91,37 @@ var timerPhaseDefinitions = map[phase]timerPhaseDefinition{
 	phaseFocus: {
 		label:    staticLabel("Focus round"),
 		subtitle: "Stay with the problem. No hints yet.",
-		duration: func(s sessionState) time.Duration { return s.focusDuration },
+		duration: func(s sessionState) time.Duration { return s.cfg.focusDuration },
 	},
 	phaseRescue: {
 		label:    staticLabel("Rescue round"),
 		subtitle: "Try examples, invariants, brute force, or a smaller case.",
-		duration: func(s sessionState) time.Duration { return s.rescueDuration },
+		duration: func(s sessionState) time.Duration { return s.cfg.rescueDuration },
 	},
 	phaseDeepFocusOne: {
 		label: func(s sessionState) string {
-			if s.noBreaks {
+			if s.cfg.noBreaks {
 				return "Deep focus"
 			}
 			return "Deep focus 1/2"
 		},
 		subtitle: "No distractions.",
-		duration: func(s sessionState) time.Duration { return s.deepFocusDuration },
+		duration: func(s sessionState) time.Duration { return s.cfg.deepFocusDuration },
 	},
 	phaseDeepShortBreak: {
 		label:    staticLabel("Short break"),
 		subtitle: "Rest. Don't distract yourself.",
-		duration: func(s sessionState) time.Duration { return s.shortBreakDuration },
+		duration: func(s sessionState) time.Duration { return s.cfg.shortBreakDuration },
 	},
 	phaseDeepFocusTwo: {
 		label:    staticLabel("Deep focus 2/2"),
 		subtitle: "No distractions.",
-		duration: func(s sessionState) time.Duration { return s.deepFocusDuration },
+		duration: func(s sessionState) time.Duration { return s.cfg.deepFocusDuration },
 	},
 	phaseDeepLongBreak: {
 		label:    staticLabel("Long break"),
 		subtitle: "Rest. Don't distract yourself.",
-		duration: func(s sessionState) time.Duration { return s.longBreakDuration },
+		duration: func(s sessionState) time.Duration { return s.cfg.longBreakDuration },
 	},
 }
 
@@ -138,15 +130,15 @@ var checkInDefinitions = map[phase]checkInDefinition{
 		title:         "Time's up.",
 		prompt:        "Are you still generating new ideas?",
 		continueLabel: "still thinking",
-		continueHint:  func(s sessionState) string { return fmt.Sprintf("another %s", formatDuration(s.focusDuration)) },
+		continueHint:  func(s sessionState) string { return fmt.Sprintf("another %s", formatDuration(s.cfg.focusDuration)) },
 		stuckLabel:    "stuck",
-		stuckHint:     func(s sessionState) string { return fmt.Sprintf("%s rescue", formatDuration(s.rescueDuration)) },
+		stuckHint:     func(s sessionState) string { return fmt.Sprintf("%s rescue", formatDuration(s.cfg.rescueDuration)) },
 	},
 	phaseFinalCheckIn: {
 		title:         "Rescue time is up.",
 		prompt:        "Did you find a new thread to pull on?",
 		continueLabel: "yes",
-		continueHint:  func(s sessionState) string { return fmt.Sprintf("continue %s", formatDuration(s.focusDuration)) },
+		continueHint:  func(s sessionState) string { return fmt.Sprintf("continue %s", formatDuration(s.cfg.focusDuration)) },
 		stuckLabel:    "no",
 		stuckHint:     staticHint("read editorial"),
 	},
@@ -162,17 +154,7 @@ func staticHint(hint string) func(sessionState) string {
 
 func newSessionState(cfg config) sessionState {
 	cfg = normalizeConfig(cfg)
-	s := sessionState{
-		mode:               cfg.mode,
-		problem:            cfg.problem,
-		focusDuration:      cfg.focusDuration,
-		rescueDuration:     cfg.rescueDuration,
-		deepFocusDuration:  cfg.deepFocusDuration,
-		shortBreakDuration: cfg.shortBreakDuration,
-		longBreakDuration:  cfg.longBreakDuration,
-		noBreaks:           cfg.noBreaks,
-		deepCycles:         cfg.deepCycles,
-	}
+	s := sessionState{cfg: cfg}
 	if cfg.mode == modeDeep {
 		return s.startDeepCycle()
 	}
@@ -180,21 +162,11 @@ func newSessionState(cfg config) sessionState {
 }
 
 func (s sessionState) config() config {
-	return newConfig(
-		s.mode,
-		s.problem,
-		s.focusDuration,
-		s.rescueDuration,
-		s.deepFocusDuration,
-		s.shortBreakDuration,
-		s.longBreakDuration,
-		s.noBreaks,
-		s.deepCycles,
-	)
+	return s.cfg
 }
 
 func (s sessionState) render() sessionRender {
-	render := sessionRender{problem: s.problem}
+	render := sessionRender{problem: s.cfg.problem}
 	if timer, ok := s.timerRender(); ok {
 		render.kind = sessionRenderTimer
 		render.timer = timer
@@ -223,7 +195,7 @@ func (s sessionState) timerRender() (timerRender, bool) {
 		remaining: s.remaining,
 		paused:    s.paused,
 		subtitle:  def.subtitle,
-		canSolve:  s.mode == modePuzzle,
+		canSolve:  s.cfg.mode == modePuzzle,
 	}, true
 }
 
@@ -264,7 +236,7 @@ func (s sessionState) restartFromEditorial() sessionTransition {
 }
 
 func (s sessionState) solved() sessionTransition {
-	if s.mode != modePuzzle || !s.isTimerPhase() {
+	if s.cfg.mode != modePuzzle || !s.isTimerPhase() {
 		return s.noop()
 	}
 	return sessionTransition{
@@ -310,73 +282,79 @@ func (s sessionState) advanceAfterTimerExpires() sessionTransition {
 		s.phase = phaseCheckIn
 		return sessionTransition{
 			session:      s,
-			notification: notifyIntent("No Peek", fmt.Sprintf("%s are up. Are you still thinking or stuck?", formatDuration(s.focusDuration))),
+			notification: notifyIntent("No Peek", fmt.Sprintf("%s are up. Are you still thinking or stuck?", formatDuration(s.cfg.focusDuration))),
 		}
 	case phaseRescue:
 		s.phase = phaseFinalCheckIn
 		return sessionTransition{
 			session:      s,
-			notification: notifyIntent("No Peek", fmt.Sprintf("%s rescue is up. Still stuck?", formatDuration(s.rescueDuration))),
+			notification: notifyIntent("No Peek", fmt.Sprintf("%s rescue is up. Still stuck?", formatDuration(s.cfg.rescueDuration))),
 		}
-	case phaseDeepFocusOne:
-		return s.finishDeepFocusBlock()
-	case phaseDeepShortBreak:
-		s = s.startTimerPhase(phaseDeepFocusTwo)
-		return sessionTransition{
-			session:      s,
-			nextTick:     true,
-			notification: notifyIntent("No Peek", fmt.Sprintf("%s short break complete. Time for another %s focus block.", formatDuration(s.shortBreakDuration), formatDuration(s.deepFocusDuration))),
-		}
-	case phaseDeepFocusTwo:
-		s = s.startTimerPhase(phaseDeepLongBreak)
-		return sessionTransition{
-			session:      s,
-			nextTick:     true,
-			notification: notifyIntent("No Peek", fmt.Sprintf("%s focus block complete. Time for a %s long break.", formatDuration(s.deepFocusDuration), formatDuration(s.longBreakDuration))),
-		}
-	case phaseDeepLongBreak:
-		s.completedCycles++
-		if s.completedCycles >= s.deepCycles {
-			return sessionTransition{
-				session:      s,
-				finished:     true,
-				notification: notifyIntent("No Peek", fmt.Sprintf("%s long break complete. Deep work complete.", formatDuration(s.longBreakDuration))),
-			}
-		}
-		s = s.startDeepCycle()
-		return sessionTransition{
-			session:      s,
-			nextTick:     true,
-			notification: notifyIntent("No Peek", fmt.Sprintf("%s long break complete. Starting a new %s focus block.", formatDuration(s.longBreakDuration), formatDuration(s.deepFocusDuration))),
-		}
+	case phaseDeepFocusOne, phaseDeepShortBreak, phaseDeepFocusTwo, phaseDeepLongBreak:
+		return s.advanceDeepPhase()
 	default:
 		return s.noop()
 	}
 }
 
-func (s sessionState) finishDeepFocusBlock() sessionTransition {
-	if s.noBreaks {
+func (s sessionState) advanceDeepPhase() sessionTransition {
+	next, cycleComplete := s.nextDeepPhase()
+	message := s.deepPhaseCompleteMessage()
+	if cycleComplete {
 		s.completedCycles++
-		if s.completedCycles >= s.deepCycles {
+		if s.completedCycles >= s.cfg.deepCycles {
 			return sessionTransition{
 				session:      s,
 				finished:     true,
-				notification: notifyIntent("No Peek", fmt.Sprintf("%s focus block complete. Deep work complete.", formatDuration(s.deepFocusDuration))),
+				notification: notifyIntent("No Peek", message),
 			}
 		}
-		s = s.startDeepCycle()
-		return sessionTransition{
-			session:      s,
-			nextTick:     true,
-			notification: notifyIntent("No Peek", fmt.Sprintf("%s focus block complete. Starting a new %s focus block.", formatDuration(s.deepFocusDuration), formatDuration(s.deepFocusDuration))),
-		}
 	}
-
-	s = s.startTimerPhase(phaseDeepShortBreak)
+	s = s.startTimerPhase(next)
 	return sessionTransition{
 		session:      s,
 		nextTick:     true,
-		notification: notifyIntent("No Peek", fmt.Sprintf("%s focus block complete. Time for a %s short break.", formatDuration(s.deepFocusDuration), formatDuration(s.shortBreakDuration))),
+		notification: notifyIntent("No Peek", message),
+	}
+}
+
+func (s sessionState) nextDeepPhase() (phase, bool) {
+	if s.cfg.noBreaks {
+		return phaseDeepFocusOne, true
+	}
+	switch s.phase {
+	case phaseDeepFocusOne:
+		return phaseDeepShortBreak, false
+	case phaseDeepShortBreak:
+		return phaseDeepFocusTwo, false
+	case phaseDeepFocusTwo:
+		return phaseDeepLongBreak, false
+	default:
+		return phaseDeepFocusOne, true
+	}
+}
+
+func (s sessionState) deepPhaseCompleteMessage() string {
+	switch s.phase {
+	case phaseDeepFocusOne:
+		if s.cfg.noBreaks {
+			if s.completedCycles+1 >= s.cfg.deepCycles {
+				return fmt.Sprintf("%s focus block complete. Deep work complete.", formatDuration(s.cfg.deepFocusDuration))
+			}
+			return fmt.Sprintf("%s focus block complete. Starting a new %s focus block.", formatDuration(s.cfg.deepFocusDuration), formatDuration(s.cfg.deepFocusDuration))
+		}
+		return fmt.Sprintf("%s focus block complete. Time for a %s short break.", formatDuration(s.cfg.deepFocusDuration), formatDuration(s.cfg.shortBreakDuration))
+	case phaseDeepShortBreak:
+		return fmt.Sprintf("%s short break complete. Time for another %s focus block.", formatDuration(s.cfg.shortBreakDuration), formatDuration(s.cfg.deepFocusDuration))
+	case phaseDeepFocusTwo:
+		return fmt.Sprintf("%s focus block complete. Time for a %s long break.", formatDuration(s.cfg.deepFocusDuration), formatDuration(s.cfg.longBreakDuration))
+	case phaseDeepLongBreak:
+		if s.completedCycles+1 >= s.cfg.deepCycles {
+			return fmt.Sprintf("%s long break complete. Deep work complete.", formatDuration(s.cfg.longBreakDuration))
+		}
+		return fmt.Sprintf("%s long break complete. Starting a new %s focus block.", formatDuration(s.cfg.longBreakDuration), formatDuration(s.cfg.deepFocusDuration))
+	default:
+		return "Deep work block complete."
 	}
 }
 

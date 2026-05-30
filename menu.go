@@ -7,11 +7,57 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type menuFieldID string
+
+const (
+	fieldMode       menuFieldID = "mode"
+	fieldSession    menuFieldID = "session"
+	fieldFocus      menuFieldID = "focus"
+	fieldRescue     menuFieldID = "rescue"
+	fieldDeepFocus  menuFieldID = "deepFocus"
+	fieldShortBreak menuFieldID = "shortBreak"
+	fieldLongBreak  menuFieldID = "longBreak"
+	fieldBreaks     menuFieldID = "breaks"
+	fieldCycles     menuFieldID = "cycles"
+)
+
+type menuFieldKind int
+
+const (
+	menuFieldMode menuFieldKind = iota
+	menuFieldText
+	menuFieldMinutes
+	menuFieldToggle
+	menuFieldNumber
+)
+
+type menuFieldDef struct {
+	id         menuFieldID
+	label      string
+	kind       menuFieldKind
+	visible    func(config) bool
+	minutes    func(config) int
+	setMinutes func(*config, int)
+}
+
+var menuFieldDefs = []menuFieldDef{
+	{id: fieldMode, label: "Mode", kind: menuFieldMode, visible: alwaysVisible},
+	{id: fieldSession, label: "Session", kind: menuFieldText, visible: alwaysVisible},
+	{id: fieldFocus, label: "Focus", kind: menuFieldMinutes, visible: puzzleModeVisible, minutes: focusMinutes, setMinutes: setFocusMinutes},
+	{id: fieldRescue, label: "Rescue", kind: menuFieldMinutes, visible: puzzleModeVisible, minutes: rescueMinutes, setMinutes: setRescueMinutes},
+	{id: fieldDeepFocus, label: "Focus", kind: menuFieldMinutes, visible: deepModeVisible, minutes: deepFocusMinutes, setMinutes: setDeepFocusMinutes},
+	{id: fieldShortBreak, label: "Short break", kind: menuFieldMinutes, visible: deepBreaksVisible, minutes: shortBreakMinutes, setMinutes: setShortBreakMinutes},
+	{id: fieldLongBreak, label: "Long break", kind: menuFieldMinutes, visible: deepBreaksVisible, minutes: longBreakMinutes, setMinutes: setLongBreakMinutes},
+	{id: fieldBreaks, label: "Breaks", kind: menuFieldToggle, visible: deepModeVisible},
+	{id: fieldCycles, label: "Cycles", kind: menuFieldNumber, visible: deepModeVisible},
+}
+
 type menuState struct {
 	cfg          config
 	cursor       int
 	editingField menuFieldID
 	input        string
+	textEdited   bool
 }
 
 type menuKeyOutcome struct {
@@ -145,7 +191,13 @@ func (m menuState) footerText() string {
 }
 
 func (m menuState) fields() []menuFieldDef {
-	return menuFieldsFor(m.cfg)
+	fields := make([]menuFieldDef, 0, len(menuFieldDefs))
+	for _, field := range menuFieldDefs {
+		if field.visible == nil || field.visible(m.cfg) {
+			fields = append(fields, field)
+		}
+	}
+	return fields
 }
 
 func (m menuState) selectedField() menuFieldDef {
@@ -202,6 +254,7 @@ func (m *menuState) commitEdit() {
 func (m *menuState) stopEditing() {
 	m.editingField = ""
 	m.input = ""
+	m.textEdited = false
 }
 
 func (m *menuState) adjustSelected(delta int) {
@@ -250,47 +303,30 @@ func (m *menuState) moveCursorToField(id menuFieldID) {
 }
 
 func (m *menuState) appendProblemInput(s string) {
-	if m.input == "" && m.cfg.problem == defaultProblem(m.cfg.mode) {
+	if !m.textEdited && m.cfg.problem == defaultProblem(m.cfg.mode) {
 		m.cfg.problem = ""
 	}
 	m.cfg.problem += s
-	m.input = "typed"
+	m.textEdited = true
 }
 
 func (m menuState) minuteField(id menuFieldID) int {
-	switch id {
-	case fieldFocus:
-		return wholeMinutes(m.cfg.focusDuration)
-	case fieldRescue:
-		return wholeMinutes(m.cfg.rescueDuration)
-	case fieldDeepFocus:
-		return wholeMinutes(m.cfg.deepFocusDuration)
-	case fieldShortBreak:
-		return wholeMinutes(m.cfg.shortBreakDuration)
-	case fieldLongBreak:
-		return wholeMinutes(m.cfg.longBreakDuration)
-	default:
+	field, ok := m.fieldByID(id)
+	if !ok || field.minutes == nil {
 		return 1
 	}
+	return field.minutes(m.cfg)
 }
 
 func (m *menuState) setMinuteField(id menuFieldID, minutes int) {
+	field, ok := m.fieldByID(id)
+	if !ok || field.setMinutes == nil {
+		return
+	}
 	if minutes < 1 {
 		minutes = 1
 	}
-	d := time.Duration(minutes) * time.Minute
-	switch id {
-	case fieldFocus:
-		m.cfg.focusDuration = d
-	case fieldRescue:
-		m.cfg.rescueDuration = d
-	case fieldDeepFocus:
-		m.cfg.deepFocusDuration = d
-	case fieldShortBreak:
-		m.cfg.shortBreakDuration = d
-	case fieldLongBreak:
-		m.cfg.longBreakDuration = d
-	}
+	field.setMinutes(&m.cfg, minutes)
 }
 
 func (m menuState) fieldValue(field menuFieldDef) string {
@@ -350,4 +386,60 @@ func isPrintableRune(s string) bool {
 
 func isDigitRune(s string) bool {
 	return len(s) == 1 && s[0] >= '0' && s[0] <= '9'
+}
+
+func alwaysVisible(config) bool {
+	return true
+}
+
+func puzzleModeVisible(cfg config) bool {
+	return cfg.mode == modePuzzle
+}
+
+func deepModeVisible(cfg config) bool {
+	return cfg.mode == modeDeep
+}
+
+func deepBreaksVisible(cfg config) bool {
+	return cfg.mode == modeDeep && !cfg.noBreaks
+}
+
+func focusMinutes(cfg config) int {
+	return wholeMinutes(cfg.focusDuration)
+}
+
+func rescueMinutes(cfg config) int {
+	return wholeMinutes(cfg.rescueDuration)
+}
+
+func deepFocusMinutes(cfg config) int {
+	return wholeMinutes(cfg.deepFocusDuration)
+}
+
+func shortBreakMinutes(cfg config) int {
+	return wholeMinutes(cfg.shortBreakDuration)
+}
+
+func longBreakMinutes(cfg config) int {
+	return wholeMinutes(cfg.longBreakDuration)
+}
+
+func setFocusMinutes(cfg *config, minutes int) {
+	cfg.focusDuration = time.Duration(minutes) * time.Minute
+}
+
+func setRescueMinutes(cfg *config, minutes int) {
+	cfg.rescueDuration = time.Duration(minutes) * time.Minute
+}
+
+func setDeepFocusMinutes(cfg *config, minutes int) {
+	cfg.deepFocusDuration = time.Duration(minutes) * time.Minute
+}
+
+func setShortBreakMinutes(cfg *config, minutes int) {
+	cfg.shortBreakDuration = time.Duration(minutes) * time.Minute
+}
+
+func setLongBreakMinutes(cfg *config, minutes int) {
+	cfg.longBreakDuration = time.Duration(minutes) * time.Minute
 }

@@ -2,6 +2,24 @@ package main
 
 import "time"
 
+type appMode string
+
+const (
+	modePuzzle appMode = "puzzle"
+	modeDeep   appMode = "deep"
+)
+
+func validMode(mode appMode) bool {
+	return mode == modePuzzle || mode == modeDeep
+}
+
+func defaultProblem(mode appMode) string {
+	if mode == modeDeep {
+		return "Deep work"
+	}
+	return "Untitled problem"
+}
+
 const (
 	defaultPuzzleFocusMinutes = 30
 	defaultRescueMinutes      = 15
